@@ -171,6 +171,10 @@ sudo chown root:trial-booking /etc/trial-booking/env
 sudo chmod 640 /etc/trial-booking/env
 ```
 
+### `tsx: command not found` or `Cannot find module '@tailwindcss/postcss'`
+
+The production env file sets `NODE_ENV=production`, which makes `npm ci` skip devDependencies. Use the latest `deploy/ec2/deploy.sh`, which runs `npm ci --include=dev` before building.
+
 ### `npm run build` killed / out of memory
 
 `t3.micro` (1 GB RAM) is often too small for a Next.js production build. The deploy script auto-creates a 2 GB swap file on low-memory instances. You can also add swap manually:

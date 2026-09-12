@@ -126,8 +126,9 @@ deploy_build() {
   source "${ENV_FILE}"
   set +a
 
-  echo "Installing dependencies..."
-  npm ci
+  echo "Installing dependencies (including devDependencies required to build)..."
+  # NODE_ENV=production in the env file would omit devDependencies (tsx, tailwind, etc.).
+  npm ci --include=dev
 
   echo "Generating Prisma client..."
   npm run db:generate
@@ -137,12 +138,18 @@ deploy_build() {
 
   if [[ "${SEED}" == "true" ]]; then
     echo "Seeding database..."
-    npm run db:seed
+    npx tsx prisma/seed.ts
   fi
 
   echo "Building application..."
+  export NODE_ENV=production
   export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=768}"
   npm run build
+
+  if [[ ! -f .next/standalone/server.js ]]; then
+    echo "Build failed: .next/standalone/server.js was not created."
+    exit 1
+  fi
 
   RELEASE_ID="$(date -u +%Y%m%d%H%M%S)"
   RELEASE_DIR="${RELEASES_DIR}/${RELEASE_ID}"
@@ -163,7 +170,7 @@ ensure_build_memory
 if [[ "$(id -un)" == "${APP_USER}" ]]; then
   deploy_build
 else
-  run_as_app_user bash -c "$(declare -f deploy_build); deploy_build"
+  run_as_app_user bash -c "set -euo pipefail; $(declare -f deploy_build); deploy_build"
 fi
 
 restart_service() {
