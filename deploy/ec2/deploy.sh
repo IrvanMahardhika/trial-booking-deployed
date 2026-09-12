@@ -54,21 +54,19 @@ fi
 
 APP_USER="${APP_USER:-trial-booking}"
 
-deploy_env() {
-  printf '%s\n' \
-    "SEED=${SEED}" \
-    "ENV_FILE=${ENV_FILE}" \
-    "APP_DIR=${APP_DIR}" \
-    "RELEASES_DIR=${RELEASES_DIR}" \
-    "CURRENT_LINK=${CURRENT_LINK}"
-}
-
 run_as_app_user() {
   if [[ "$(id -un)" == "${APP_USER}" ]]; then
     "$@"
   elif [[ "$(id -u)" -eq 0 ]]; then
     # sudo drops the caller environment by default; pass deploy vars explicitly.
-    sudo -u "${APP_USER}" env $(deploy_env) -- "$@"
+    # Avoid `env --` — not supported on all systems (e.g. Amazon Linux env).
+    sudo -u "${APP_USER}" env \
+      "SEED=${SEED}" \
+      "ENV_FILE=${ENV_FILE}" \
+      "APP_DIR=${APP_DIR}" \
+      "RELEASES_DIR=${RELEASES_DIR}" \
+      "CURRENT_LINK=${CURRENT_LINK}" \
+      "$@"
   else
     echo "Run as root or as ${APP_USER}."
     exit 1
