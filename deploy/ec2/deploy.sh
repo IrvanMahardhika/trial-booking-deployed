@@ -68,11 +68,10 @@ run_as_app_user() {
 cd "${APP_DIR}"
 
 if [[ -d .git ]]; then
+  # Git refuses pulls when the repo owner differs from the caller (e.g. after bootstrap chown).
+  run_as_app_user git -C "${APP_DIR}" pull --ff-only
   if [[ "$(id -u)" -eq 0 ]]; then
-    git -C "${APP_DIR}" pull --ff-only
     chown -R "${APP_USER}:${APP_USER}" "${APP_DIR}"
-  else
-    run_as_app_user git -C "${APP_DIR}" pull --ff-only
   fi
 fi
 
