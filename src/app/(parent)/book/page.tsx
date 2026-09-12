@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { createBookingAction } from "@/app/(parent)/actions";
+import { FlashAlert } from "@/components/flash-alert";
 import { PageShell } from "@/components/page-shell";
 import { formatClassDate } from "@/lib/format";
 import { getSessionParent } from "@/lib/auth";
+import {
+  getBookFormErrorMessage,
+  getQueryParam,
+} from "@/lib/flash-messages";
 import { bookingService } from "@/lib/services";
 
 type BookPageProps = PageProps<"/book">;
@@ -14,7 +19,9 @@ export default async function BookPage({ searchParams }: BookPageProps) {
   }
 
   const params = await searchParams;
-  const hasInvalidInput = params.error === "invalid";
+  const formErrorMessage = getBookFormErrorMessage(
+    getQueryParam(params.error),
+  );
 
   const trialClasses = await bookingService.listTrialClasses();
 
@@ -23,10 +30,8 @@ export default async function BookPage({ searchParams }: BookPageProps) {
       title="Book a trial class"
       description="Choose one of your children and an available trial class."
     >
-      {hasInvalidInput ? (
-        <p className="mb-5 max-w-xl rounded-2xl border border-danger/20 bg-red-50 px-4 py-3 text-sm text-danger">
-          Please select a child and a trial class before continuing.
-        </p>
+      {formErrorMessage ? (
+        <FlashAlert variant="error">{formErrorMessage}</FlashAlert>
       ) : null}
 
       <form

@@ -188,6 +188,17 @@ export class BookingService {
     };
   }
 
+  async getActiveBooking(studentId: string, trialClassId: string) {
+    return this.db.booking.findFirst({
+      where: {
+        studentId,
+        trialClassId,
+        status: { in: ACTIVE_STATUSES },
+      },
+      select: { id: true },
+    });
+  }
+
   async createBooking(studentId: string, trialClassId: string) {
     const trialClass = await this.db.trialClass.findUnique({
       where: { id: trialClassId },

@@ -1,22 +1,38 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PaymentActions } from "@/components/payment-actions";
+import { FlashAlert } from "@/components/flash-alert";
 import { PageShell } from "@/components/page-shell";
 import { StatusBadge } from "@/components/status-badge";
 import { formatClassDate } from "@/lib/format";
 import { getSessionParent } from "@/lib/auth";
 import { BookingError } from "@/lib/errors";
+import {
+  getBookingPageErrorMessage,
+  getBookingPageNoticeMessage,
+  getQueryParam,
+} from "@/lib/flash-messages";
 import { bookingService } from "@/lib/services";
 
 type BookingPageProps = PageProps<"/bookings/[id]">;
 
-export default async function BookingPage({ params }: BookingPageProps) {
+export default async function BookingPage({
+  params,
+  searchParams,
+}: BookingPageProps) {
   const parent = await getSessionParent();
   if (!parent) {
     return null;
   }
 
   const { id } = await params;
+  const query = await searchParams;
+  const pageErrorMessage = getBookingPageErrorMessage(
+    getQueryParam(query.error),
+  );
+  const pageNoticeMessage = getBookingPageNoticeMessage(
+    getQueryParam(query.notice),
+  );
 
   let booking;
   try {
@@ -36,6 +52,14 @@ export default async function BookingPage({ params }: BookingPageProps) {
       description="Review the booking result after submission and payment."
     >
       <div className="max-w-xl space-y-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
+        {pageNoticeMessage ? (
+          <FlashAlert variant="notice">{pageNoticeMessage}</FlashAlert>
+        ) : null}
+
+        {pageErrorMessage ? (
+          <FlashAlert variant="error">{pageErrorMessage}</FlashAlert>
+        ) : null}
+
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-medium">{booking.trialClass.title}</h2>
           <StatusBadge status={booking.status} />
