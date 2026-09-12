@@ -1,0 +1,23 @@
+[Unit]
+Description=Ottodot Trial Booking (Next.js)
+Documentation=https://github.com/IrvanMahardhika/trial-booking-deployed
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=trial-booking
+Group=trial-booking
+WorkingDirectory=/opt/trial-booking/current
+EnvironmentFile=/etc/trial-booking/env
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:/var/log/trial-booking/app.log
+StandardError=append:/var/log/trial-booking/app.log
+
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
