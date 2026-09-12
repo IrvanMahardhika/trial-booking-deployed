@@ -54,14 +54,49 @@ fi
 
 APP_USER="${APP_USER:-trial-booking}"
 
+deploy_env() {
+  printf '%s\n' \
+    "SEED=${SEED}" \
+    "ENV_FILE=${ENV_FILE}" \
+    "APP_DIR=${APP_DIR}" \
+    "RELEASES_DIR=${RELEASES_DIR}" \
+    "CURRENT_LINK=${CURRENT_LINK}"
+}
+
 run_as_app_user() {
   if [[ "$(id -un)" == "${APP_USER}" ]]; then
     "$@"
   elif [[ "$(id -u)" -eq 0 ]]; then
-    sudo -u "${APP_USER}" -- "$@"
+    # sudo drops the caller environment by default; pass deploy vars explicitly.
+    sudo -u "${APP_USER}" env $(deploy_env) -- "$@"
   else
     echo "Run as root or as ${APP_USER}."
     exit 1
+  fi
+}
+
+ensure_build_memory() {
+  if [[ "$(id -u)" -ne 0 ]]; then
+    return
+  fi
+
+  if swapon --show | grep -q .; then
+    return
+  fi
+
+  local mem_mb
+  mem_mb="$(awk '/MemTotal/ {print int($2 / 1024)}' /proc/meminfo)"
+  if [[ "${mem_mb}" -ge 2048 ]]; then
+    return
+  fi
+
+  echo "Low memory (${mem_mb} MB) and no swap detected; creating 2G swap file for the build..."
+  fallocate -l 2G /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count=2048 status=none
+  chmod 600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+  if ! grep -q '^/swapfile ' /etc/fstab; then
+    echo '/swapfile none swap sw 0 0' >> /etc/fstab
   fi
 }
 
@@ -76,6 +111,18 @@ if [[ -d .git ]]; then
 fi
 
 deploy_build() {
+  APP_DIR="${APP_DIR:-/opt/trial-booking}"
+  ENV_FILE="${ENV_FILE:-/etc/trial-booking/env}"
+  RELEASES_DIR="${RELEASES_DIR:-${APP_DIR}/releases}"
+  CURRENT_LINK="${CURRENT_LINK:-${APP_DIR}/current}"
+
+  cd "${APP_DIR}"
+
+  if [[ ! -r "${ENV_FILE}" ]]; then
+    echo "Cannot read ${ENV_FILE} as $(id -un). Check file permissions."
+    exit 1
+  fi
+
   set -a
   # shellcheck source=/dev/null
   source "${ENV_FILE}"
@@ -96,6 +143,7 @@ deploy_build() {
   fi
 
   echo "Building application..."
+  export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=768}"
   npm run build
 
   RELEASE_ID="$(date -u +%Y%m%d%H%M%S)"
@@ -109,9 +157,10 @@ deploy_build() {
   cp -a public "${RELEASE_DIR}/public"
 
   ln -sfn "${RELEASE_DIR}" "${CURRENT_LINK}"
+  echo "${RELEASE_ID}" > "${APP_DIR}/.current-release"
 }
 
-export SEED ENV_FILE RELEASES_DIR CURRENT_LINK APP_DIR
+ensure_build_memory
 
 if [[ "$(id -un)" == "${APP_USER}" ]]; then
   deploy_build
@@ -139,4 +188,8 @@ restart_service() {
 
 restart_service
 
-echo "Deploy complete. Active release: ${RELEASE_ID}"
+if [[ -f "${APP_DIR}/.current-release" ]]; then
+  echo "Deploy complete. Active release: $(cat "${APP_DIR}/.current-release")"
+else
+  echo "Deploy complete."
+fi

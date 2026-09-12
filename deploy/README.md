@@ -149,6 +149,41 @@ sudo systemctl restart trial-booking
 | `/etc/trial-booking/env` | Live secrets (created by bootstrap) |
 | `/var/lib/trial-booking/` | SQLite database (persistent) |
 
+## Troubleshooting
+
+### `Environment variable not found: DATABASE_URL`
+
+`sudo` drops environment variables by default. Use the latest `deploy/ec2/deploy.sh`, which passes deploy settings explicitly to the `trial-booking` user.
+
+Verify the env file exists and is readable:
+
+```bash
+sudo ls -l /etc/trial-booking/env
+sudo -u trial-booking cat /etc/trial-booking/env
+```
+
+### `npm run build` killed / out of memory
+
+`t3.micro` (1 GB RAM) is often too small for a Next.js production build. The deploy script auto-creates a 2 GB swap file on low-memory instances. You can also add swap manually:
+
+```bash
+sudo fallocate -l 2G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+```
+
+Or use a `t3.small` (2 GB RAM) instance.
+
+### `dubious ownership` during `git pull`
+
+Run:
+
+```bash
+sudo chown -R trial-booking:trial-booking /opt/trial-booking
+sudo bash deploy/ec2/deploy.sh --seed
+```
+
 ## Production notes
 
 - **SQLite** is fine for a single-instance demo. For multi-instance or higher durability, migrate to RDS Postgres and update `DATABASE_URL`.
