@@ -127,8 +127,13 @@ deploy_build() {
   set +a
 
   echo "Installing dependencies (including devDependencies required to build)..."
-  # NODE_ENV=production in the env file would omit devDependencies (tsx, tailwind, etc.).
-  npm ci --include=dev
+  # NODE_ENV=production in the env file would omit devDependencies (tsx, typescript, etc.).
+  NODE_ENV=development npm ci --include=dev
+
+  if [[ ! -d node_modules/@tailwindcss/postcss ]]; then
+    echo "Missing @tailwindcss/postcss after npm ci."
+    exit 1
+  fi
 
   echo "Generating Prisma client..."
   npm run db:generate
@@ -142,6 +147,7 @@ deploy_build() {
   fi
 
   echo "Building application..."
+  rm -rf .next
   export NODE_ENV=production
   export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=768}"
   npm run build

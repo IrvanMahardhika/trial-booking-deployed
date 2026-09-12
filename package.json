@@ -17,22 +17,22 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
+    "@tailwindcss/postcss": "^4",
     "dotenv": "^17.4.2",
     "jose": "^6.2.12",
     "next": "16.3.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "tailwindcss": "^4",
     "zod": "^4.5.4"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "prisma": "^6.19.0",
-    "tailwindcss": "^4",
     "tsx": "^4.23.13",
     "typescript": "^5",
     "vitest": "^3.2.4"
