@@ -68,11 +68,17 @@ create_user_and_dirs() {
 
   mkdir -p "${APP_DIR}" "${DATA_DIR}" /etc/trial-booking /var/log/trial-booking
   chown -R "${APP_USER}:${APP_USER}" "${APP_DIR}" "${DATA_DIR}" /var/log/trial-booking
+  chown root:"${APP_USER}" /etc/trial-booking
   chmod 750 /etc/trial-booking
 }
 
 install_env_file() {
+  chown root:"${APP_USER}" /etc/trial-booking
+  chmod 750 /etc/trial-booking
+
   if [[ -f "${ENV_FILE}" ]]; then
+    chmod 640 "${ENV_FILE}"
+    chown root:"${APP_USER}" "${ENV_FILE}"
     echo "Keeping existing ${ENV_FILE}"
     return
   fi

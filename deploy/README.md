@@ -155,11 +155,20 @@ sudo systemctl restart trial-booking
 
 `sudo` drops environment variables by default. Use the latest `deploy/ec2/deploy.sh`, which passes deploy settings explicitly to the `trial-booking` user.
 
-Verify the env file exists and is readable:
+Verify the env file exists and is readable (`/etc/trial-booking` must be `root:trial-booking` mode `750`):
 
 ```bash
-sudo ls -l /etc/trial-booking/env
+sudo ls -ld /etc/trial-booking /etc/trial-booking/env
 sudo -u trial-booking cat /etc/trial-booking/env
+```
+
+If permission is denied, fix directory and file ownership:
+
+```bash
+sudo chown root:trial-booking /etc/trial-booking
+sudo chmod 750 /etc/trial-booking
+sudo chown root:trial-booking /etc/trial-booking/env
+sudo chmod 640 /etc/trial-booking/env
 ```
 
 ### `npm run build` killed / out of memory
